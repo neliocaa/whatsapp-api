@@ -1,17 +1,64 @@
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────────┐
+ * │ @author jrCleber                                                             │
+ * │ @filename redis.client.ts                                                    │
+ * │ Developed by: Cleber Wilson                                                  │
+ * │ Creation date: Apr 09, 2023                                                  │
+ * │ Contact: contato@codechat.dev                                                │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ @copyright © Cleber Wilson 2023. All rights reserved.                        │
+ * │ Licensed under the Apache License, Version 2.0                               │
+ * │                                                                              │
+ * │  @license "https://github.com/code-chat-br/whatsapp-api/blob/main/LICENSE"   │
+ * │                                                                              │
+ * │ You may not use this file except in compliance with the License.             │
+ * │ You may obtain a copy of the License at                                      │
+ * │                                                                              │
+ * │    http://www.apache.org/licenses/LICENSE-2.0                                │
+ * │                                                                              │
+ * │ Unless required by applicable law or agreed to in writing, software          │
+ * │ distributed under the License is distributed on an "AS IS" BASIS,            │
+ * │ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.     │
+ * │                                                                              │
+ * │ See the License for the specific language governing permissions and          │
+ * │ limitations under the License.                                               │
+ * │                                                                              │
+ * │ @class RedisCache                                                            │
+ * ├──────────────────────────────────────────────────────────────────────────────┤
+ * │ @important                                                                   │
+ * │ For any future changes to the code in this file, it is recommended to        │
+ * │ contain, together with the modification, the information of the developer    │
+ * │ who changed it and the date of modification.                                 │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ */
+
 import { createClient, RedisClientType } from '@redis/client';
 import { Logger } from '../config/logger.config';
 import { BufferJSON } from '@whiskeysockets/baileys';
 import { Redis } from '../config/env.config';
 
 export class RedisCache {
-  constructor(private readonly redisEnv: Partial<Redis>, private instanceName?: string) {
-    this.client = createClient({ url: this.redisEnv.URI });
-
-    this.client.connect();
+  constructor() {
+    process.on('beforeExit', async () => {
+      if (this.statusConnection) {
+        await this.client.disconnect();
+      }
+    });
   }
+
+  private statusConnection = false;
+  private instanceName: string;
+  private redisEnv: Redis;
 
   public set reference(reference: string) {
     this.instanceName = reference;
+  }
+
+  public async connect(redisEnv: Redis) {
+    this.client = createClient({ url: redisEnv.URI });
+    await this.client.connect();
+    this.statusConnection = true;
+    this.redisEnv = redisEnv;
   }
 
   private readonly logger = new Logger(RedisCache.name);
